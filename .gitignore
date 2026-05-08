@@ -1,0 +1,39 @@
+# === Бинарные файлы и артефакты сборки ===
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bank-api
+bin/
+dist/
+
+# === Тесты и покрытие ===
+*.test
+*.out
+coverage/
+coverage.out
+
+# === Конфигурация и секреты ===
+.env
+*.env
+/.env*
+/*.env.local
+*.log
+secrets.yaml
+.values.secrets.yaml
+*.secret.yaml
+
+# === IDE и редакторы ===
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# === Docker ===
+postgres-data/
+tmp/
+
+# === Testcontainers cache ===
+/tmp/testcontainers-*
