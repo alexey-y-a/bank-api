@@ -35,7 +35,7 @@ test:
 # -run Integration запускает только тесты с "Integration" в имени
 # -count=1 отключает кэш тестов — важно для стабильности
 test-integration:
-	go test ./internal/repository/... -run Integration -v -count=1
+	go test ./... --run Integration -v -count=1
 
 # go run компилирует и запускает код без создания бинарника (для разработки)
 run:
