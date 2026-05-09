@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -28,6 +26,7 @@ func Run() {
 	}
 
 	go func() {
+		fmt.Printf("server listening on %s\n", addr)
 		err := server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
 			fmt.Fprintf(os.Stderr, "critical server error: %v\n", err)
@@ -43,14 +42,6 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-}
-
-func waitForShutdown(server *http.Server) {
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-	<-sig
-	fmt.Println("shutdown signal received, exiting...")
 }
 
 func getEnv(key, fallback string) string {
