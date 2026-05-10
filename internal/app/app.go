@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/config"
+	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
 )
 
@@ -31,6 +33,26 @@ func Run() {
 		"log_level":  cfg.Log.Level,
 		"log_format": cfg.Log.Format,
 	})
+
+	db, err := postgres.NewDB(cfg.Database)
+	if err != nil {
+		logger.Error(log, "failed to connect to database", err, nil)
+		os.Exit(1)
+	}
+
+	defer db.Close()
+
+	logger.Info(log, "connected to database", nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err = db.Ping(ctx)
+	if err != nil {
+		logger.Warn(log, "database ping failed on startup", err, nil)
+	} else {
+		logger.Debug(log, "database ping successful", nil)
+	}
 
 	mux := http.NewServeMux()
 
