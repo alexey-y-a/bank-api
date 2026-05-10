@@ -6,6 +6,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Fields = logrus.Fields
+
 func New(level, format string) (*logrus.Logger, error) {
 	log := logrus.New()
 
