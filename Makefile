@@ -41,13 +41,14 @@ test-integration:
 run:
 	go run ./cmd/api
 
-# Запускает все сервисы из docker-compose.yml в фоновом режиме (-d)
+# -f deploy/docker-compose.yml указывает Compose искать файл в папке deploy/
+# -d запускает сервисы в фоновом режиме (detached)docker-up:
 docker-up:
-	docker-compose up -d
+	docker compose -f deploy/docker-compose.yml up -d
 
-# Останавливает и удаляет контейнеры, сети, volumes
+# Останавливает контейнеры, удаляет сеть, но сохраняет volume (данные БД)
 docker-down:
-	docker-compose down
+	docker compose -f deploy/docker-compose.yml down
 
 # Накатывает все "up" миграции из папки migrations/
 # Требует установленного goose: go install github.com/pressly/goose/v3/cmd/goose@latest
