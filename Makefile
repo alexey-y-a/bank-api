@@ -63,3 +63,10 @@ migrate-down:
 # Требует установленного golangci-lint: https://golangci-lint.run/
 lint:
 	golangci-lint run ./...
+
+# Генерация моков через mockgen
+# Запускает go generate во всех пакетах, где есть директивы //go:generate
+# -v (verbose) покажет, в каких пакетах происходит генерация
+# ./... означает "все пакеты рекурсивно"
+generate:
+	go generate -v ./...
