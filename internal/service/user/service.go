@@ -7,6 +7,7 @@ import (
 
 	"github.com/alexey-y-a/bank-api/internal/domain"
 	"github.com/alexey-y-a/bank-api/internal/repository"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -51,4 +52,34 @@ func (s *Service) Register(ctx context.Context, email, username, password string
 	user.Password = ""
 
 	return user, nil
+}
+
+func (s *Service) Login(ctx context.Context, email, password string) (string, *domain.User, error) {
+	user, err := s.repo.FindByEmail(ctx, email)
+	if err != nil {
+		return "", nil, fmt.Errorf("find by email: %w", err)
+	}
+
+	if user == nil {
+		return "", nil, ErrInvalidCredentials
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return "", nil, ErrInvalidCredentials
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.RegisteredClaims{
+		Subject:   fmt.Sprintf("%d", user.ID),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.jwtTTL)),
+	})
+
+	tokenString, err := token.SignedString(s.jwtSecret)
+	if err != nil {
+		return "", nil, fmt.Errorf("sign jwt token: %w", err)
+	}
+
+	user.Password = ""
+	return tokenString, user, nil
 }
