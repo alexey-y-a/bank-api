@@ -69,7 +69,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, *d
 		return "", nil, ErrInvalidCredentials
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.RegisteredClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Subject:   fmt.Sprintf("%d", user.ID),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.jwtTTL)),
