@@ -35,7 +35,6 @@ func NewPostgresHelper(ctx context.Context) (*PostgresHelper, error) {
 				WithOccurrence(2).WithStartupTimeout(30*time.Second),
 		),
 	)
-
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to run postgres container: %w", err)
@@ -117,7 +116,6 @@ func (h *PostgresHelper) Cleanup() error {
 }
 
 func findProjectRoot() (string, error) {
-
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("failed to get working directory: %w", err)
@@ -126,7 +124,6 @@ func findProjectRoot() (string, error) {
 	for {
 		_, err := os.Stat(filepath.Join(dir, "go.mod"))
 		if err == nil {
-
 			return dir, nil
 		}
 

@@ -14,13 +14,9 @@ import (
 )
 
 func Run() {
-	cfg, err := config.Load()
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "critical failed to load config: %v\n", err)
-		os.Exit(1)
-	}
+	cfg := config.New()
 
-	log, err := logger.New(cfg.Log.Level, cfg.Log.Format)
+	log, err := logger.New(cfg.GetLogLevel(), cfg.GetLogFormat())
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "critical failed to init logger: %v\n", err)
 	}
@@ -28,13 +24,15 @@ func Run() {
 	logger.Info(log, "application starting", logger.Fields{
 		"service":    "bank-api",
 		"version":    "1.0.0",
-		"host":       cfg.Server.Host,
-		"port":       cfg.Server.Port,
-		"log_level":  cfg.Log.Level,
-		"log_format": cfg.Log.Format,
+		"host":       cfg.GetServerHost(),
+		"port":       cfg.GetServerPort(),
+		"log_level":  cfg.GetLogLevel(),
+		"log_format": cfg.GetLogFormat(),
 	})
 
-	db, err := postgres.NewDB(cfg.Database)
+	dbCfg := cfg.GetDatabaseConfig()
+
+	db, err := postgres.NewDB(dbCfg)
 	if err != nil {
 		logger.Error(log, "failed to connect to database", err, nil)
 		os.Exit(1)
@@ -58,7 +56,7 @@ func Run() {
 
 	mux.HandleFunc("GET /healthz", handleHealthz)
 
-	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	addr := fmt.Sprintf("%s:%d", cfg.GetServerHost(), cfg.GetServerPort())
 
 	server := &http.Server{
 		Addr:         addr,
