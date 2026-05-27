@@ -59,10 +59,19 @@ migrate-up:
 migrate-down:
 	goose -dir migrations postgres "${DB_DSN}" down
 
-# Проверяет код на соответствие стандартам и лучшим практикам
+# Linters Проверяет код на соответствие стандартам и лучшим практикам
 # Требует установленного golangci-lint: https://golangci-lint.run/
-lint:
-	golangci-lint run ./...
+lint: tidy
+	gofumpt -w .
+	gci write . --skip-generated -s standard -s default
+	make linters
+
+linters: golangci-lint
+
+golangci-lint: build
+	find -type f -name ".go" | grep -v '.\.pb\.go' | grep -v '\/[0-9a-z_]*.go' && echo "Files should be named in snake case" && exit 1 || echo "All files named in snake case"
+	golangci-lint version
+	golangci-lint run --fix
 
 # Генерация моков через mockgen
 # Запускает go generate во всех пакетах, где есть директивы //go:generate
