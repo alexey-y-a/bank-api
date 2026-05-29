@@ -1,18 +1,25 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
+	"github.com/alexey-y-a/bank-api/internal/domain"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 )
 
-type Handler struct {
-	service *userservice.Service
+type UserService interface {
+	Register(ctx context.Context, email, username, password string) (*domain.User, error)
+	Login(ctx context.Context, email, password string) (string, *domain.User, error)
 }
 
-func NewHandler(service *userservice.Service) *Handler {
+type Handler struct {
+	service UserService
+}
+
+func NewHandler(service UserService) *Handler {
 	return &Handler{
 		service: service,
 	}
