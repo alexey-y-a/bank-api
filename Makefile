@@ -71,7 +71,7 @@ linters: golangci-lint
 golangci-lint: build
 	find -type f -name ".go" | grep -v '.\.pb\.go' | grep -v '\/[0-9a-z_]*.go' && echo "Files should be named in snake case" && exit 1 || echo "All files named in snake case"
 	golangci-lint version
-	golangci-lint run
+	golangci-lint run --fix
 
 # Генерация моков через mockgen
 # Запускает go generate во всех пакетах, где есть директивы //go:generate
