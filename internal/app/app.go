@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/config"
+	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
 )
@@ -58,9 +59,13 @@ func Run() {
 
 	addr := fmt.Sprintf("%s:%d", cfg.GetServerHost(), cfg.GetServerPort())
 
+	var handler http.Handler = mux
+	handler = middleware.Logging(log)(handler)
+	handler = middleware.RequestID(handler)
+
 	server := &http.Server{
 		Addr:         addr,
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 		IdleTimeout:  10 * time.Second,
