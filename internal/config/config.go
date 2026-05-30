@@ -118,20 +118,70 @@ func (c *Config) GetDatabaseConfig() DatabaseConfig {
 	}
 }
 
-func (c *Config) GetServerHost() string     { return c.env.ServerHost }
-func (c *Config) GetServerPort() int        { return c.env.ServerPort }
-func (c *Config) GetLogLevel() string       { return c.env.LogLevel }
-func (c *Config) GetLogFormat() string      { return c.env.LogFormat }
-func (c *Config) GetDBDSN() string          { return c.env.DBDSN }
-func (c *Config) GetDBMaxOpenConns() int    { return c.env.DBMaxOpenConns }
-func (c *Config) GetDBMaxIdleConns() int    { return c.env.DBMaxIdleConns }
-func (c *Config) GetDBConnMaxLifetime() int { return c.env.DBConnMaxLifetime }
-func (c *Config) GetJWTSecret() string      { return c.env.JWTSecret }
-func (c *Config) GetJWTTTLHours() int       { return c.env.JWTTTLHours }
-func (c *Config) GetCardSecret() string     { return c.env.CardSecret }
-func (c *Config) GetSMTPHost() string       { return c.env.SMTPHost }
-func (c *Config) GetSMTPPort() int          { return c.env.SMTPPort }
-func (c *Config) GetSMTPUser() string       { return c.env.SMTPUser }
-func (c *Config) GetSMTPPass() string       { return c.env.SMTPPass }
-func (c *Config) GetSMTPFrom() string       { return c.env.SMTPFrom }
-func (c *Config) GetSMTPNotifyTo() string   { return c.env.SMTPNotifyTo }
+func (c *Config) GetServerHost() string {
+	return c.env.ServerHost
+}
+
+func (c *Config) GetServerPort() int {
+	return c.env.ServerPort
+}
+
+func (c *Config) GetLogLevel() string {
+	return c.env.LogLevel
+}
+
+func (c *Config) GetLogFormat() string {
+	return c.env.LogFormat
+}
+
+func (c *Config) GetDBDSN() string {
+	return c.env.DBDSN
+}
+
+func (c *Config) GetDBMaxOpenConns() int {
+	return c.env.DBMaxOpenConns
+}
+
+func (c *Config) GetDBMaxIdleConns() int {
+	return c.env.DBMaxIdleConns
+}
+
+func (c *Config) GetDBConnMaxLifetime() int {
+	return c.env.DBConnMaxLifetime
+}
+
+func (c *Config) GetJWTSecret() string {
+	return c.env.JWTSecret
+}
+
+func (c *Config) GetJWTTTLHours() int {
+	return c.env.JWTTTLHours
+}
+
+func (c *Config) GetCardSecret() string {
+	return c.env.CardSecret
+}
+
+func (c *Config) GetSMTPHost() string {
+	return c.env.SMTPHost
+}
+
+func (c *Config) GetSMTPPort() int {
+	return c.env.SMTPPort
+}
+
+func (c *Config) GetSMTPUser() string {
+	return c.env.SMTPUser
+}
+
+func (c *Config) GetSMTPPass() string {
+	return c.env.SMTPPass
+}
+
+func (c *Config) GetSMTPFrom() string {
+	return c.env.SMTPFrom
+}
+
+func (c *Config) GetSMTPNotifyTo() string {
+	return c.env.SMTPNotifyTo
+}
