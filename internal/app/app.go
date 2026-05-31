@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/config"
+	userhandler "github.com/alexey-y-a/bank-api/internal/handler/user"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
+	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
 )
 
@@ -53,15 +55,20 @@ func Run() {
 		logger.Debug(log, "database ping successful", nil)
 	}
 
+	userRepo := postgres.NewUserRepository(db.Pool())
+	userSvc := userservice.NewService(userRepo, cfg.GetJWTSecret(), cfg.GetJWTTTLHours())
+	userHdl := userhandler.NewHandler(userSvc)
+
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("GET /healthz", handleHealthz)
-
-	addr := fmt.Sprintf("%s:%d", cfg.GetServerHost(), cfg.GetServerPort())
+	mux.HandleFunc("POST/register", userHdl.Register)
+	mux.HandleFunc("POST/login", userHdl.Login)
 
 	var handler http.Handler = mux
 	handler = middleware.Logging(log)(handler)
 	handler = middleware.RequestID(handler)
+
+	addr := fmt.Sprintf("%s:%d", cfg.GetServerHost(), cfg.GetServerPort())
 
 	server := &http.Server{
 		Addr:         addr,
