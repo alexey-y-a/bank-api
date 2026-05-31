@@ -59,10 +59,15 @@ func Run() {
 	userSvc := userservice.NewService(userRepo, cfg.GetJWTSecret(), cfg.GetJWTTTLHours())
 	userHdl := userhandler.NewHandler(userSvc)
 
+	authMW := middleware.Auth([]byte(cfg.GetJWTSecret()))
+	_ = authMW
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("POST/register", userHdl.Register)
 	mux.HandleFunc("POST/login", userHdl.Login)
+
+	//mux.Handle("GET /accounts", authMW(http.HandlerFunc(accountHdl.GetAccounts)))
 
 	var handler http.Handler = mux
 	handler = middleware.Logging(log)(handler)
