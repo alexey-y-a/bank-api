@@ -15,6 +15,7 @@ var HTTPRequestTotal = promauto.NewCounterVec(
 
 var HTTPRequestDuration = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
+		Name:    "http_request_duration_seconds",
 		Help:    "HTTP request duration in seconds by method and path.",
 		Buckets: prometheus.DefBuckets,
 	},
