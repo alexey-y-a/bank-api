@@ -203,7 +203,6 @@ func TestHandler_Integration_Login(t *testing.T) {
 				require.True(t, ok)
 				require.NotEmpty(t, claims.Subject, "subject (userID) must be set")
 			}
-
 		})
 	}
 }
@@ -257,5 +256,4 @@ func TestHandler_Integration_AuthMiddleware(t *testing.T) {
 	recNoAuth := httptest.NewRecorder()
 	protectedHandler.ServeHTTP(recNoAuth, reqNoAuth)
 	require.Equal(t, http.StatusUnauthorized, recNoAuth.Code)
-
 }
