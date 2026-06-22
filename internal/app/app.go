@@ -11,6 +11,7 @@ import (
 	"github.com/alexey-y-a/bank-api/internal/config"
 	userhandler "github.com/alexey-y-a/bank-api/internal/handler/user"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
+	"github.com/alexey-y-a/bank-api/internal/probe"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
@@ -45,6 +46,8 @@ func Run() {
 
 	logger.Info(log, "connected to database", nil)
 
+	readyProbe := probe.NewReadyProbe()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -53,6 +56,7 @@ func Run() {
 		logger.Warn(log, "database ping failed on startup", err, nil)
 	} else {
 		logger.Debug(log, "database ping successful", nil)
+		readyProbe.MarkReady()
 	}
 
 	userRepo := postgres.NewUserRepository(db.Pool())
@@ -64,6 +68,7 @@ func Run() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
+	mux.HandleFunc("GET /readyz", readyProbe.Handler())
 	mux.HandleFunc("POST/register", userHdl.Register)
 	mux.HandleFunc("POST/login", userHdl.Login)
 
