@@ -15,6 +15,7 @@ import (
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func Run() {
@@ -69,6 +70,7 @@ func Run() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", readyProbe.Handler())
+	mux.HandleFunc("GET /metrics", promhttp.Handler().ServeHTTP)
 	mux.HandleFunc("POST/register", userHdl.Register)
 	mux.HandleFunc("POST/login", userHdl.Login)
 
