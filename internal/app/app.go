@@ -79,6 +79,7 @@ func Run() {
 	var handler http.Handler = mux
 	handler = middleware.Logging(log)(handler)
 	handler = middleware.RequestID(handler)
+	handler = middleware.Metrics(handler)
 
 	addr := fmt.Sprintf("%s:%d", cfg.GetServerHost(), cfg.GetServerPort())
 
