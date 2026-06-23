@@ -77,6 +77,7 @@ func Run() {
 	//mux.Handle("GET /accounts", authMW(http.HandlerFunc(accountHdl.GetAccounts)))
 
 	var handler http.Handler = mux
+	handler = middleware.Recover(log)(handler)
 	handler = middleware.Logging(log)(handler)
 	handler = middleware.RequestID(handler)
 	handler = middleware.Metrics(handler)
