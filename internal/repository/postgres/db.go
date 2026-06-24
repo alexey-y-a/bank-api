@@ -25,8 +25,7 @@ func NewDB(cfg config.DatabaseConfig) (DB, error) {
 	}
 
 	poolConfig.MaxConns = int32(cfg.MaxOpenConns)
-
-	poolConfig.MaxConns = int32(cfg.MaxIdleConns)
+	poolConfig.MinConns = int32(cfg.MaxIdleConns)
 
 	poolConfig.MaxConnLifetime = time.Duration(cfg.ConnMaxLifetime) * time.Second
 
