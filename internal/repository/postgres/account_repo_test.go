@@ -88,7 +88,6 @@ func TestAccountRepository_Integration(t *testing.T) {
 	})
 
 	t.Run("UpdateBalance", func(t *testing.T) {
-		// Создаём счёт.
 		account := domain.NewAccount(user.ID, "RUB")
 		err := repo.Create(ctx, account)
 		require.NoError(t, err)
@@ -102,12 +101,10 @@ func TestAccountRepository_Integration(t *testing.T) {
 	})
 
 	t.Run("UpdateBalance_NotFound", func(t *testing.T) {
-		// Пытаемся обновить несуществующий счёт.
 		err := repo.UpdateBalance(ctx, -1, 1000)
 
 		require.ErrorIs(t, err, repository.ErrNotFound, "должна быть ошибка record not found")
 	})
-
 }
 
 func createTestUser(t *testing.T, repo repository.UserRepository) *domain.User {
