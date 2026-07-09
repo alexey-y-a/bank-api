@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/config"
+	accounthandler "github.com/alexey-y-a/bank-api/internal/handler/account"
 	userhandler "github.com/alexey-y-a/bank-api/internal/handler/user"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/probe"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
+	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -64,8 +66,11 @@ func Run() {
 	userSvc := userservice.NewService(userRepo, cfg.GetJWTSecret(), cfg.GetJWTTTLHours())
 	userHdl := userhandler.NewHandler(userSvc)
 
+	accountRepo := postgres.NewAccountRepository(db.Pool())
+	accountSvc := accountservice.NewService(accountRepo)
+	accountHdl := accounthandler.NewHandler(accountSvc)
+
 	authMW := middleware.Auth([]byte(cfg.GetJWTSecret()))
-	_ = authMW
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
@@ -74,7 +79,11 @@ func Run() {
 	mux.HandleFunc("POST/register", userHdl.Register)
 	mux.HandleFunc("POST/login", userHdl.Login)
 
-	//mux.Handle("GET /accounts", authMW(http.HandlerFunc(accountHdl.GetAccounts)))
+	mux.Handle("GET /accounts", authMW(http.HandlerFunc(accountHdl.GetUserAccounts)))
+	mux.Handle("POST /accounts", authMW(http.HandlerFunc(accountHdl.CreateAccount)))
+	mux.Handle("GET /accounts/{id}", authMW(http.HandlerFunc(accountHdl.GetAccount)))
+	mux.Handle("POST /accounts/{id}/deposit", authMW(http.HandlerFunc(accountHdl.Deposit)))
+	mux.Handle("POST /accounts/{id}/withdraw", authMW(http.HandlerFunc(accountHdl.Withdraw)))
 
 	var handler http.Handler = mux
 	handler = middleware.Recover(log)(handler)
