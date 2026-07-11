@@ -54,3 +54,7 @@ func GetUserID(ctx context.Context) string {
 
 	return ""
 }
+
+func WithUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, userIDKey{}, userID)
+}
