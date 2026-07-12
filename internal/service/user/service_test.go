@@ -74,7 +74,7 @@ func TestService_Register(t *testing.T) {
 			defer ctrl.Finish()
 			mockRepo := mocks.NewMockUserRepository(ctrl)
 			tt.setupMock(mockRepo)
-			svc := NewService(mockRepo, "test-secret", 24)
+			svc := NewService(mockRepo, nil, "test-secret", 24)
 			result, err := svc.Register(context.Background(), tt.email, tt.username, tt.password)
 
 			if tt.expectedErr != nil {
@@ -170,7 +170,7 @@ func TestService_Login(t *testing.T) {
 			mockRepo := mocks.NewMockUserRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			svc := NewService(mockRepo, "test-secret", 24)
+			svc := NewService(mockRepo, nil, "test-secret", 24)
 
 			token, resultUser, err := svc.Login(context.Background(), tt.email, tt.password)
 

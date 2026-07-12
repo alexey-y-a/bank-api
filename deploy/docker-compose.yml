@@ -23,8 +23,24 @@ services:
     networks:
       - bank-api-net
 
+  redis:
+    image: redis:7-alpine
+    container_name: bank-api-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bank-api-net
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   bank-api-net:

@@ -29,7 +29,7 @@ func setupIntegrationTest(t *testing.T) (*Handler, func()) {
 	require.NoError(t, err, "failed to run migrations")
 
 	userRepo := postgres.NewUserRepository(dbHelper.Pool)
-	userSvc := userservice.NewService(userRepo, testJWTSecret, 24)
+	userSvc := userservice.NewService(userRepo, nil, testJWTSecret, 24)
 	handler := NewHandler(userSvc)
 
 	cleanup := func() {
