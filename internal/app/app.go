@@ -14,6 +14,7 @@ import (
 	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/probe"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
+	goredis "github.com/alexey-y-a/bank-api/internal/repository/redis"
 	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
@@ -62,8 +63,20 @@ func Run() {
 		readyProbe.MarkReady()
 	}
 
+	var userCache *goredis.UserCache
+
+	redisAddr := cfg.GetRedisAddr()
+	redisPass := cfg.GetRedisPass()
+
+	if redisAddr != "" {
+		userCache = goredis.NewUserCache(redisAddr, redisPass)
+		logger.Info(log, "redis cache initialized", logger.Fields{"addr": redisAddr})
+	} else {
+		logger.Warn(log, "redis not configured - cache disabled", nil, nil)
+	}
+
 	userRepo := postgres.NewUserRepository(db.Pool())
-	userSvc := userservice.NewService(userRepo, cfg.GetJWTSecret(), cfg.GetJWTTTLHours())
+	userSvc := userservice.NewService(userRepo, userCache, cfg.GetJWTSecret(), cfg.GetJWTTTLHours())
 	userHdl := userhandler.NewHandler(userSvc)
 
 	accountRepo := postgres.NewAccountRepository(db.Pool())

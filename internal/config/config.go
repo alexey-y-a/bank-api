@@ -46,6 +46,10 @@ type EnvSetting struct {
 	SMTPPass     string `env:"SMTP_PASS" env-default:"" env-description:"SMTP password"`
 	SMTPFrom     string `env:"SMTP_FROM" env-default:"noreply@example.com" env-description:"SMTP sender email"`
 	SMTPNotifyTo string `env:"SMTP_NOTIFY_TO" env-default:"" env-description:"email for test notifications"`
+
+	// Redis
+	RedisAddr string `env:"REDIS_ADDR" env-default:"localhost:6379" env-description:"Redis server address"`
+	RedisPass string `env:"REDIS_PASSWORD" env-default:"" env-description:"Redis password"`
 }
 
 type DatabaseConfig struct {
@@ -184,4 +188,12 @@ func (c *Config) GetSMTPFrom() string {
 
 func (c *Config) GetSMTPNotifyTo() string {
 	return c.env.SMTPNotifyTo
+}
+
+func (c *Config) GetRedisAddr() string {
+	return c.env.RedisAddr
+}
+
+func (c *Config) GetRedisPass() string {
+	return c.env.RedisPass
 }
