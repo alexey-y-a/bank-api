@@ -230,7 +230,7 @@ func TestHandler_Deposit(t *testing.T) {
 	t.Run("ошибка невалидная сумма", func(t *testing.T) {
 		mock := &mockService{
 			depositFn: func(ctx context.Context, accountID, userID int64, amount int64) (*domain.Account, error) {
-				return nil, accountservice.ErrInvalidAmount
+				return nil, domain.ErrInvalidAmount
 			},
 		}
 
@@ -277,7 +277,7 @@ func TestHandler_Withdraw(t *testing.T) {
 	t.Run("ошибка: недостаточно средств", func(t *testing.T) {
 		mock := &mockService{
 			withdrawFn: func(ctx context.Context, accountID, userID int64, amount int64) (*domain.Account, error) {
-				return nil, accountservice.ErrInsufficientFunds
+				return nil, domain.ErrInsufficientFunds
 			},
 		}
 

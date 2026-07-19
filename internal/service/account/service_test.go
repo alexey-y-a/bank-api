@@ -161,7 +161,7 @@ func TestAccountService_Deposit(t *testing.T) {
 
 		_, err := svc.Deposit(context.Background(), 1, 5, 0)
 
-		require.ErrorIs(t, err, ErrInvalidAmount, "пополнение на 0 должно вернуть ошибку")
+		require.ErrorIs(t, err, domain.ErrInvalidAmount, "пополнение на 0 должно вернуть ошибку")
 	})
 }
 
@@ -200,6 +200,6 @@ func TestAccountService_Withdraw(t *testing.T) {
 
 		_, err := svc.Withdraw(context.Background(), 1, 5, 5000)
 
-		require.ErrorIs(t, err, ErrInsufficientFunds, "должна быть ошибка insufficient funds")
+		require.ErrorIs(t, err, domain.ErrInsufficientFunds, "должна быть ошибка insufficient funds")
 	})
 }
