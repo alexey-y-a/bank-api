@@ -61,7 +61,7 @@ func (s *Service) Deposit(ctx context.Context, accountID, userID, amount int64) 
 
 	err = account.Deposit(amount)
 	if err != nil {
-		return nil, ErrInvalidAmount
+		return nil, domain.ErrInvalidAmount
 	}
 
 	err = s.repo.UpdateBalance(ctx, account.ID, account.Balance)
@@ -80,7 +80,7 @@ func (s *Service) Withdraw(ctx context.Context, accountID, userID, amount int64)
 
 	err = account.Withdraw(amount)
 	if err != nil {
-		return nil, ErrInsufficientFunds
+		return nil, domain.ErrInsufficientFunds
 	}
 
 	err = s.repo.UpdateBalance(ctx, account.ID, account.Balance)

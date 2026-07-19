@@ -159,7 +159,7 @@ func (h *Handler) Deposit(w http.ResponseWriter, r *http.Request) {
 
 	account, err := h.service.Deposit(r.Context(), accountID, userID, req.Amount)
 	if err != nil {
-		if errors.Is(err, accountservice.ErrInvalidAmount) {
+		if errors.Is(err, domain.ErrInvalidAmount) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -209,7 +209,7 @@ func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
 
 	account, err := h.service.Withdraw(r.Context(), accountID, userID, req.Amount)
 	if err != nil {
-		if errors.Is(err, accountservice.ErrInvalidAmount) {
+		if errors.Is(err, domain.ErrInvalidAmount) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -221,7 +221,7 @@ func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}
-		if errors.Is(err, accountservice.ErrInsufficientFunds) {
+		if errors.Is(err, domain.ErrInsufficientFunds) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
