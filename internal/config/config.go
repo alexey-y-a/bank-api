@@ -197,3 +197,11 @@ func (c *Config) GetRedisAddr() string {
 func (c *Config) GetRedisPass() string {
 	return c.env.RedisPass
 }
+
+func (c *Config) GetCardAESSecret() string {
+	return c.env.CardSecret
+}
+
+func (c *Config) GetHMACSecret() string {
+	return c.env.CardSecret
+}

@@ -9,13 +9,16 @@ import (
 	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/config"
+	cardcrypto "github.com/alexey-y-a/bank-api/internal/crypto"
 	accounthandler "github.com/alexey-y-a/bank-api/internal/handler/account"
+	cardhandler "github.com/alexey-y-a/bank-api/internal/handler/card"
 	userhandler "github.com/alexey-y-a/bank-api/internal/handler/user"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/probe"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	goredis "github.com/alexey-y-a/bank-api/internal/repository/redis"
 	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
+	cardservice "github.com/alexey-y-a/bank-api/internal/service/card"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -83,6 +86,11 @@ func Run() {
 	accountSvc := accountservice.NewService(accountRepo)
 	accountHdl := accounthandler.NewHandler(accountSvc)
 
+	cardEncryptor := cardcrypto.NewCardEncryptor(cfg.GetCardAESSecret(), cfg.GetHMACSecret())
+	cardRepo := postgres.NewCardRepository(db.Pool())
+	cardSvc := cardservice.NewService(cardEncryptor, cardRepo, accountRepo)
+	cardHdl := cardhandler.NewHandler(cardSvc)
+
 	authMW := middleware.Auth([]byte(cfg.GetJWTSecret()))
 
 	mux := http.NewServeMux()
@@ -97,6 +105,11 @@ func Run() {
 	mux.Handle("GET /accounts/{id}", authMW(http.HandlerFunc(accountHdl.GetAccount)))
 	mux.Handle("POST /accounts/{id}/deposit", authMW(http.HandlerFunc(accountHdl.Deposit)))
 	mux.Handle("POST /accounts/{id}/withdraw", authMW(http.HandlerFunc(accountHdl.Withdraw)))
+
+	mux.Handle("POST /cards", authMW(http.HandlerFunc(cardHdl.CreateCard)))
+	mux.Handle("GET /cards", authMW(http.HandlerFunc(cardHdl.GetUserCards)))
+	mux.Handle("POST /cards/{id}/block", authMW(http.HandlerFunc(cardHdl.BlockCard)))
+	mux.Handle("POST /cards/{id}/pay", authMW(http.HandlerFunc(cardHdl.PayWithCard)))
 
 	var handler http.Handler = mux
 	handler = middleware.Recover(log)(handler)
