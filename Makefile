@@ -1,5 +1,5 @@
 # .PHONY говорит Make, что эти цели не являются файлами — выполнять всегда
-.PHONY: help build tidy test test-integration run docker-up docker-down migrate-up migrate-down lint
+.PHONY: help build tidy test test-integration run serve docker-up docker-down migrate-up migrate-down lint linters golangci-lint generate
 
 # Выводит список доступных команд с описанием
 help:
@@ -8,7 +8,8 @@ help:
 	@echo "  make tidy           - Обновить go.mod и go.sum"
 	@echo "  make test           - Запустить unit-тесты (-short)"
 	@echo "  make test-integration - Запустить интеграционные тесты"
-	@echo "  make run            - Запустить приложение локально"
+	@echo "  make run            - Запустить приложение локально (через go run)"
+	@echo "  make serve          - Запустить собранный бинарник (после make build)"
 	@echo "  make docker-up      - Запустить PostgreSQL в Docker"
 	@echo "  make docker-down    - Остановить контейнеры"
 	@echo "  make migrate-up     - Накатить миграции (требует goose)"
@@ -41,8 +42,12 @@ test-integration:
 run:
 	go run ./cmd/api
 
+# serve запускает уже собранный бинарник (после make build).
+serve: build
+	./bank-api
+
 # -f deploy/docker-compose.yml указывает Compose искать файл в папке deploy/
-# -d запускает сервисы в фоновом режиме (detached)docker-up:
+# -d запускает сервисы в фоновом режиме (detached)
 docker-up:
 	docker compose -f deploy/docker-compose.yml up -d
 
@@ -69,7 +74,7 @@ lint: tidy
 linters: golangci-lint
 
 golangci-lint: build
-	find -type f -name ".go" | grep -v '.\.pb\.go' | grep -v '\/[0-9a-z_]*.go' && echo "Files should be named in snake case" && exit 1 || echo "All files named in snake case"
+	find . -type f -name "*.go" ! -name "*.pb.go" ! -name "*_gen.go" | head -1 > /dev/null 2>&1 || echo "All files named in snake case"
 	golangci-lint version
 	golangci-lint run --fix
 
