@@ -12,6 +12,7 @@ import (
 	cardcrypto "github.com/alexey-y-a/bank-api/internal/crypto"
 	accounthandler "github.com/alexey-y-a/bank-api/internal/handler/account"
 	cardhandler "github.com/alexey-y-a/bank-api/internal/handler/card"
+	transferhandler "github.com/alexey-y-a/bank-api/internal/handler/transfer"
 	userhandler "github.com/alexey-y-a/bank-api/internal/handler/user"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/probe"
@@ -19,6 +20,7 @@ import (
 	goredis "github.com/alexey-y-a/bank-api/internal/repository/redis"
 	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
 	cardservice "github.com/alexey-y-a/bank-api/internal/service/card"
+	transferservice "github.com/alexey-y-a/bank-api/internal/service/transfer"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -91,6 +93,10 @@ func Run() {
 	cardSvc := cardservice.NewService(cardEncryptor, cardRepo, accountRepo)
 	cardHdl := cardhandler.NewHandler(cardSvc)
 
+	transferRepo := postgres.NewTransferRepo(db.Pool())
+	transferSvc := transferservice.NewService(accountRepo, transferRepo, db.Pool())
+	transferHdl := transferhandler.NewHandler(transferSvc)
+
 	authMW := middleware.Auth([]byte(cfg.GetJWTSecret()))
 
 	mux := http.NewServeMux()
@@ -110,6 +116,9 @@ func Run() {
 	mux.Handle("GET /cards", authMW(http.HandlerFunc(cardHdl.GetUserCards)))
 	mux.Handle("POST /cards/{id}/block", authMW(http.HandlerFunc(cardHdl.BlockCard)))
 	mux.Handle("POST /cards/{id}/pay", authMW(http.HandlerFunc(cardHdl.PayWithCard)))
+
+	mux.Handle("POST /transfer", authMW(http.HandlerFunc(transferHdl.MakeTransfer)))
+	mux.Handle("GET /history", authMW(http.HandlerFunc(transferHdl.GetHistory)))
 
 	var handler http.Handler = mux
 	handler = middleware.Recover(log)(handler)
