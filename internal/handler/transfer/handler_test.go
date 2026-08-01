@@ -15,13 +15,8 @@ import (
 )
 
 type mockService struct {
-	depositFn      func(ctx context.Context, accountID, userID, amount int64) error
 	makeTransferFn func(ctx context.Context, fromAccountID, toAccountID, userID, amount int64) error
 	getHistoryFn   func(ctx context.Context, userID int64, limit, offset int) ([]*domain.Transaction, error)
-}
-
-func (s *mockService) Deposit(ctx context.Context, accountID, userID, amount int64) error {
-	return s.depositFn(ctx, accountID, userID, amount)
 }
 
 func (s *mockService) MakeTransfer(ctx context.Context, fromAccountID, toAccountID, userID, amount int64) error {
