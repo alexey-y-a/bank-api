@@ -13,4 +13,5 @@ type CreditRepository interface {
 	UpdateStatus(ctx context.Context, id int64, status domain.CreditStatus) error
 	CreateScheduleItem(ctx context.Context, item *domain.CreditScheduleItem) error
 	FindScheduleByCreditID(ctx context.Context, creditID int64) ([]*domain.CreditScheduleItem, error)
+	UpdateScheduleItemStatus(ctx context.Context, itemID int64, status domain.PaymentStatus) error
 }
