@@ -209,3 +209,22 @@ func (r *creditRepo) FindScheduleByCreditID(ctx context.Context, creditID int64)
 
 	return items, nil
 }
+
+const updateScheduleItemStatusQuery = `
+UPDATE payment_schedules
+SET status = $1
+WHERE id = $2
+`
+
+func (r *creditRepo) UpdateScheduleItemStatus(ctx context.Context, itemID int64, status domain.PaymentStatus) error {
+	tag, err := r.pool.Exec(ctx, updateScheduleItemStatusQuery, string(status), itemID)
+	if err != nil {
+		return fmt.Errorf("credit_repo.UpdateScheduleItemStatus: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("credit_repo.UpdateScheduleItemStatus: %w", repository.ErrNotFound)
+	}
+
+	return nil
+}
