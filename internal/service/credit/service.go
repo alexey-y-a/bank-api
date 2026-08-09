@@ -14,9 +14,9 @@ type Service struct {
 	accountRepo repository.AccountRepository
 }
 
-func NewService(creditREpo repository.CreditRepository, accountRepo repository.AccountRepository) *Service {
+func NewService(creditRepo repository.CreditRepository, accountRepo repository.AccountRepository) *Service {
 	return &Service{
-		creditRepo:  creditREpo,
+		creditRepo:  creditRepo,
 		accountRepo: accountRepo,
 	}
 }
