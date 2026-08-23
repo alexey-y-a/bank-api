@@ -12,6 +12,7 @@ import (
 	cardcrypto "github.com/alexey-y-a/bank-api/internal/crypto"
 	accounthandler "github.com/alexey-y-a/bank-api/internal/handler/account"
 	cardhandler "github.com/alexey-y-a/bank-api/internal/handler/card"
+	credithandler "github.com/alexey-y-a/bank-api/internal/handler/credit"
 	transferhandler "github.com/alexey-y-a/bank-api/internal/handler/transfer"
 	userhandler "github.com/alexey-y-a/bank-api/internal/handler/user"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
@@ -20,6 +21,7 @@ import (
 	goredis "github.com/alexey-y-a/bank-api/internal/repository/redis"
 	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
 	cardservice "github.com/alexey-y-a/bank-api/internal/service/card"
+	creditservice "github.com/alexey-y-a/bank-api/internal/service/credit"
 	transferservice "github.com/alexey-y-a/bank-api/internal/service/transfer"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
@@ -97,14 +99,18 @@ func Run() {
 	transferSvc := transferservice.NewService(accountRepo, transferRepo, db.Pool())
 	transferHdl := transferhandler.NewHandler(transferSvc)
 
+	creditRepo := postgres.NewCreditRepo(db.Pool())
+	creditSvc := creditservice.NewService(creditRepo, accountRepo)
+	creditHdl := credithandler.NewHandler(creditSvc)
+
 	authMW := middleware.Auth([]byte(cfg.GetJWTSecret()))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", readyProbe.Handler())
 	mux.HandleFunc("GET /metrics", promhttp.Handler().ServeHTTP)
-	mux.HandleFunc("POST/register", userHdl.Register)
-	mux.HandleFunc("POST/login", userHdl.Login)
+	mux.HandleFunc("POST /register", userHdl.Register)
+	mux.HandleFunc("POST /login", userHdl.Login)
 
 	mux.Handle("GET /accounts", authMW(http.HandlerFunc(accountHdl.GetUserAccounts)))
 	mux.Handle("POST /accounts", authMW(http.HandlerFunc(accountHdl.CreateAccount)))
@@ -119,6 +125,10 @@ func Run() {
 
 	mux.Handle("POST /transfer", authMW(http.HandlerFunc(transferHdl.MakeTransfer)))
 	mux.Handle("GET /history", authMW(http.HandlerFunc(transferHdl.GetHistory)))
+
+	mux.Handle("POST /credits", authMW(http.HandlerFunc(creditHdl.CreateCredit)))
+	mux.Handle("GET /credits/{id}/schedule", authMW(http.HandlerFunc(creditHdl.GetSchedule)))
+	mux.Handle("POST /credits/{id}/pay", authMW(http.HandlerFunc(creditHdl.MakePayment)))
 
 	var handler http.Handler = mux
 	handler = middleware.Recover(log)(handler)
