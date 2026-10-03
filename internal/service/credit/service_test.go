@@ -3,6 +3,7 @@ package credit
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/domain"
 	"github.com/stretchr/testify/require"
@@ -42,6 +43,14 @@ func (m *mockCreditRepo) FindScheduleByCreditID(ctx context.Context, creditID in
 
 func (m *mockCreditRepo) UpdateScheduleItemStatus(ctx context.Context, itemID int64, status domain.PaymentStatus) error {
 	return m.updateScheduleItemStatusFn(ctx, itemID, status)
+}
+
+func (m *mockCreditRepo) FindPendingPaymentsBefore(ctx context.Context, beforeDate time.Time) ([]*domain.CreditScheduleItem, error) {
+	return nil, nil
+}
+
+func (m *mockCreditRepo) UpdatePaymentPenalty(ctx context.Context, itemID, penalty int64) error {
+	return nil
 }
 
 type mockAccountRepo struct {

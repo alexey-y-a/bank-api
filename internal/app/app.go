@@ -22,6 +22,7 @@ import (
 	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
 	cardservice "github.com/alexey-y-a/bank-api/internal/service/card"
 	creditservice "github.com/alexey-y-a/bank-api/internal/service/credit"
+	"github.com/alexey-y-a/bank-api/internal/service/scheduler"
 	transferservice "github.com/alexey-y-a/bank-api/internal/service/transfer"
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
@@ -103,6 +104,12 @@ func Run() {
 	creditSvc := creditservice.NewService(creditRepo, accountRepo)
 	creditHdl := credithandler.NewHandler(creditSvc)
 
+	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
+	defer schedulerCancel()
+
+	creditScheduler := scheduler.NewScheduler(creditRepo, log)
+	creditScheduler.Run(schedulerCtx)
+
 	authMW := middleware.Auth([]byte(cfg.GetJWTSecret()))
 
 	mux := http.NewServeMux()
@@ -156,7 +163,7 @@ func Run() {
 		}
 	}()
 
-	waitForShutdown(server)
+	waitForShutdown(server, schedulerCancel, creditScheduler.Stop)
 }
 
 func handleHealthz(w http.ResponseWriter, r *http.Request) {

@@ -10,17 +10,21 @@ import (
 	"time"
 )
 
-func waitForShutdown(server *http.Server) {
+func waitForShutdown(server *http.Server, cancelScheduler context.CancelFunc, stopScheduler func()) {
 	sigChan := make(chan os.Signal, 1)
 
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
 
+	fmt.Println("received shutdown signal, starting gracefull shutdown...")
+
+	cancelScheduler()
+	stopScheduler()
+	fmt.Println("credit scheduler stopped")
+
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
-	fmt.Println("received shutdown signal, starting graceful shutdown...")
 
 	err := server.Shutdown(shutdownCtx)
 	if err != nil {
