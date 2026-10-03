@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/domain"
 	"github.com/alexey-y-a/bank-api/internal/repository"
@@ -163,7 +164,7 @@ func (r *creditRepo) CreateScheduleItem(ctx context.Context, item *domain.Credit
 }
 
 const getScheduleByCreditIDQuery = `
-SELECT id, credit_id, payment_date, principal, interest, total, remaining_balance, status
+SELECT id, credit_id, payment_date, principal, interest, total, remaining_balance, penalty, status
 FROM payment_schedules
 WHERE credit_id = $1
 ORDER BY payment_date ASC
@@ -189,6 +190,7 @@ func (r *creditRepo) FindScheduleByCreditID(ctx context.Context, creditID int64)
 			&item.Interest,
 			&item.Total,
 			&item.RemainingBalance,
+			&item.Penalty,
 			&item.Status,
 		)
 		if err != nil {
@@ -224,6 +226,73 @@ func (r *creditRepo) UpdateScheduleItemStatus(ctx context.Context, itemID int64,
 
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("credit_repo.UpdateScheduleItemStatus: %w", repository.ErrNotFound)
+	}
+
+	return nil
+}
+
+const findPendingPaymentsBeforeQuery = `
+SELECT id, credit_id, payment_date, principal, interest, total, remainingBalance, penalty, status
+FROM payment_schedules
+WHERE status = 'pending' AND payment_date < $1
+ORDER BY payment_date ASC 
+`
+
+func (r *creditRepo) FindPendingPaymentsBefore(ctx context.Context, beforeDate time.Time) ([]*domain.CreditScheduleItem, error) {
+	rows, err := r.pool.Query(ctx, findPendingPaymentsBeforeQuery, beforeDate)
+	if err != nil {
+		return nil, fmt.Errorf("credit_repo.FindPendingPaymentsBefore: %w", err)
+	}
+	defer rows.Close()
+
+	var payments []*domain.CreditScheduleItem
+
+	for rows.Next() {
+		item := &domain.CreditScheduleItem{}
+		err := rows.Scan(
+			&item.ID,
+			&item.CreditID,
+			&item.PaymentDate,
+			&item.Principal,
+			&item.Interest,
+			&item.Total,
+			&item.RemainingBalance,
+			&item.Penalty,
+			&item.Status,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("credit_repo.FindPendingPaymentsBefore scan: %w", err)
+		}
+
+		payments = append(payments, item)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("credit_repo.FindPendingPaymentsBefore rows: %w", err)
+	}
+
+	if payments == nil {
+		return []*domain.CreditScheduleItem{}, nil
+	}
+
+	return payments, nil
+}
+
+const updatePaymentPenaltyQuery = `
+UPDATE payment_schedules
+SET penalty = $1
+WHERE id = $2
+`
+
+func (r *creditRepo) UpdatePaymentPenalty(ctx context.Context, itemID, penalty int64) error {
+	tag, err := r.pool.Exec(ctx, updatePaymentPenaltyQuery, penalty, itemID)
+	if err != nil {
+		return fmt.Errorf("credit_repo.UpdatePaymentPenalty: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("credit_repo.UpdatePaymentPenalty: %w", repository.ErrNotFound)
 	}
 
 	return nil

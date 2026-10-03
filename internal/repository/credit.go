@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/alexey-y-a/bank-api/internal/domain"
 )
@@ -14,4 +15,6 @@ type CreditRepository interface {
 	CreateScheduleItem(ctx context.Context, item *domain.CreditScheduleItem) error
 	FindScheduleByCreditID(ctx context.Context, creditID int64) ([]*domain.CreditScheduleItem, error)
 	UpdateScheduleItemStatus(ctx context.Context, itemID int64, status domain.PaymentStatus) error
+	FindPendingPaymentsBefore(ctx context.Context, beforeDate time.Time) ([]*domain.CreditScheduleItem, error)
+	UpdatePaymentPenalty(ctx context.Context, itemID, penalty int64) error
 }

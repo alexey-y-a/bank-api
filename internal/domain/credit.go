@@ -47,6 +47,7 @@ type CreditScheduleItem struct {
 	Interest         int64         `json:"interest"`
 	Total            int64         `json:"total"`
 	RemainingBalance int64         `json:"remaining_balance"`
+	Penalty          int64         `json:"penalty"`
 	Status           PaymentStatus `json:"status"`
 }
 
