@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/sirupsen/logrus"
@@ -50,6 +51,9 @@ type EnvSetting struct {
 	// Redis
 	RedisAddr string `env:"REDIS_ADDR" env-default:"localhost:6379" env-description:"Redis server address"`
 	RedisPass string `env:"REDIS_PASSWORD" env-default:"" env-description:"Redis password"`
+
+	// Kafka
+	KafkaBrokers string `env:"KAFKA_BROKERS" env-default:"localhost:9092" env-description:"Kafka broker address, comma separated"`
 }
 
 type DatabaseConfig struct {
@@ -196,6 +200,10 @@ func (c *Config) GetRedisAddr() string {
 
 func (c *Config) GetRedisPass() string {
 	return c.env.RedisPass
+}
+
+func (c *Config) GetKafkaBrokers() []string {
+	return strings.Split(c.env.KafkaBrokers, ",")
 }
 
 func (c *Config) GetCardAESSecret() string {

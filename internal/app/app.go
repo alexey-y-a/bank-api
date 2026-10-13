@@ -15,6 +15,7 @@ import (
 	credithandler "github.com/alexey-y-a/bank-api/internal/handler/credit"
 	transferhandler "github.com/alexey-y-a/bank-api/internal/handler/transfer"
 	userhandler "github.com/alexey-y-a/bank-api/internal/handler/user"
+	"github.com/alexey-y-a/bank-api/internal/kafka"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/probe"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
@@ -81,6 +82,24 @@ func Run() {
 		logger.Info(log, "redis cache initialized", logger.Fields{"addr": redisAddr})
 	} else {
 		logger.Warn(log, "redis not configured - cache disabled", nil, nil)
+	}
+
+	kafkaProducer, err := kafka.NewProducer(cfg.GetKafkaBrokers())
+	if err != nil {
+		logger.Error(log, "failed to create kafka producer", err, nil)
+		os.Exit(1)
+	}
+
+	defer kafkaProducer.Close()
+
+	kafkaCtx, kafkaCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer kafkaCancel()
+
+	err = kafkaProducer.Ping(kafkaCtx)
+	if err != nil {
+		logger.Warn(log, "kafka ping failed on startup", err, nil)
+	} else {
+		logger.Info(log, "kafka producer initialized", logger.Fields{"brokers": cfg.GetKafkaBrokers()})
 	}
 
 	userRepo := postgres.NewUserRepository(db.Pool())
