@@ -232,7 +232,7 @@ func (r *creditRepo) UpdateScheduleItemStatus(ctx context.Context, itemID int64,
 }
 
 const findPendingPaymentsBeforeQuery = `
-SELECT id, credit_id, payment_date, principal, interest, total, remainingBalance, penalty, status
+SELECT id, credit_id, payment_date, principal, interest, total, remaining_balance, penalty, status
 FROM payment_schedules
 WHERE status = 'pending' AND payment_date < $1
 ORDER BY payment_date ASC 
