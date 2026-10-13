@@ -116,7 +116,7 @@ func Run() {
 	cardHdl := cardhandler.NewHandler(cardSvc)
 
 	transferRepo := postgres.NewTransferRepo(db.Pool())
-	transferSvc := transferservice.NewService(accountRepo, transferRepo, db.Pool())
+	transferSvc := transferservice.NewService(accountRepo, transferRepo, db.Pool(), kafkaProducer, log)
 	transferHdl := transferhandler.NewHandler(transferSvc)
 
 	creditRepo := postgres.NewCreditRepo(db.Pool())
