@@ -9,6 +9,7 @@ import (
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -16,17 +17,25 @@ const (
 	creditAccountQuery = "UPDATE accounts SET balance = $1, updated_at = NOW() WHERE id = $2"
 )
 
+type EventPublisher interface {
+	Publish(ctx context.Context, event *domain.Event) error
+}
+
 type Service struct {
 	accountRepo  repository.AccountRepository
 	transferRepo repository.TransferRepository
 	pool         *pgxpool.Pool
+	publisher    EventPublisher
+	log          *logrus.Logger
 }
 
-func NewService(accountRepo repository.AccountRepository, transferRepo repository.TransferRepository, pool *pgxpool.Pool) *Service {
+func NewService(accountRepo repository.AccountRepository, transferRepo repository.TransferRepository, pool *pgxpool.Pool, publisher EventPublisher, log *logrus.Logger) *Service {
 	return &Service{
 		accountRepo:  accountRepo,
 		transferRepo: transferRepo,
 		pool:         pool,
+		publisher:    publisher,
+		log:          log,
 	}
 }
 
@@ -124,6 +133,29 @@ func (s *Service) MakeTransfer(ctx context.Context, fromAccountID, toAccountID, 
 	})
 	if err != nil {
 		return fmt.Errorf("transfer_service.MakeTransfer: %w", err)
+	}
+
+	err = s.publishTransferEvent(ctx, fromAccountID, toAccountID, amount)
+	if err != nil {
+		s.log.WithError(err).WithFields(logrus.Fields{
+			"from_account_id": fromAccountID,
+			"to_account_id":   toAccountID,
+			"amount":          amount,
+		}).Error("publish transfer event failed")
+	}
+
+	return nil
+}
+
+func (s *Service) publishTransferEvent(ctx context.Context, fromAccountID, toAccountID, amount int64) error {
+	event, err := domain.NewEvent(domain.EventTypeTransfer, fromAccountID, toAccountID, amount)
+	if err != nil {
+		return fmt.Errorf("create transfer event: %w", err)
+	}
+
+	err = s.publisher.Publish(ctx, event)
+	if err != nil {
+		return fmt.Errorf("publish transfer event: %w", err)
 	}
 
 	return nil

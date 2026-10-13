@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/alexey-y-a/bank-api/internal/domain"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,6 +50,14 @@ func (m *mockTransferRepo) GetByAccountID(ctx context.Context, accountID int64, 
 
 func (m *mockTransferRepo) GetByUserID(ctx context.Context, userID int64, limit, offset int) ([]*domain.Transaction, error) {
 	return m.getByUserIDFn(ctx, userID, limit, offset)
+}
+
+type mockPublisher struct {
+	publishFn func(ctx context.Context, event *domain.Event) error
+}
+
+func (m *mockPublisher) Publish(ctx context.Context, event *domain.Event) error {
+	return m.publishFn(ctx, event)
 }
 
 func TestDeposit(t *testing.T) {
@@ -123,7 +132,7 @@ func TestDeposit(t *testing.T) {
 
 			tt.setupMocks(accountRepo, transferRepo)
 
-			svc := NewService(accountRepo, transferRepo, nil)
+			svc := NewService(accountRepo, transferRepo, nil, &mockPublisher{}, logrus.New())
 
 			err := svc.Deposit(context.Background(), tt.accountID, tt.userID, tt.amount)
 			if tt.expectedErr != nil {
@@ -187,7 +196,7 @@ func TestGetHistory(t *testing.T) {
 			transferRepo := &mockTransferRepo{}
 			tt.setupMocks(transferRepo)
 
-			svc := NewService(&mockAccountRepo{}, transferRepo, nil)
+			svc := NewService(&mockAccountRepo{}, transferRepo, nil, &mockPublisher{}, logrus.New())
 
 			transactions, err := svc.GetHistory(context.Background(), tt.userID, 10, 0)
 
