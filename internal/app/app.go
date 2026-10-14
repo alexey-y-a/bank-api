@@ -104,6 +104,13 @@ func Run(ctx context.Context) {
 		logger.Info(log, "kafka producer initialized", logger.Fields{"brokers": cfg.GetKafkaBrokers()})
 	}
 
+	kafkaConsumer, err := kafka.NewConsumer(cfg.GetKafkaBrokers(), log)
+	if err != nil {
+		logger.Error(log, "failed to create kafka consumer", err, nil)
+		os.Exit(1)
+	}
+	defer kafkaConsumer.Close()
+
 	userRepo := postgres.NewUserRepository(db.Pool())
 	userSvc := userservice.NewService(userRepo, userCache, cfg.GetJWTSecret(), cfg.GetJWTTTLHours())
 	userHdl := userhandler.NewHandler(userSvc)
@@ -192,6 +199,12 @@ func Run(ctx context.Context) {
 
 	errGr.Go(func() error {
 		return shutdownServer(egCtx, log, server)
+	})
+
+	errGr.Go(func() error {
+		kafkaConsumer.Run(egCtx)
+
+		return nil
 	})
 
 	err = errGr.Wait()
