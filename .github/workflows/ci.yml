@@ -1,0 +1,148 @@
+# Имя workflow
+name: CI (build + auto-merge)
+
+# Когда запускаемся:
+#  - push в любую ветку КРОМЕ main (в main код попадает только через проверенный PR)
+#  - workflow_dispatch: ручной перезапуск для конкретной ветки
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Branch name to process'
+        required: true
+        type: string
+
+# Права встроенного токена GITHUB_TOKEN: создавать PR, ветки, статусы
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+  statuses: write
+  actions: write
+
+jobs:
+  # 1. Найти существующий PR для ветки или создать новый
+  create-pr:
+    runs-on: ubuntu-latest
+    # Единое имя ветки для всех шагов: ручной input или ветка пуша
+    # (ref_name - короткое имя без префикса refs/heads/)
+    env:
+      BRANCH_NAME: ${{ github.event.inputs.branch_name || github.ref_name }}
+    outputs:
+      pr_number: ${{ steps.create-pr.outputs.pr_number }}
+    steps:
+      - uses: actions/github-script@v7
+        id: create-pr
+        with:
+          script: |
+            const branchName = process.env.BRANCH_NAME;
+
+            // Ищем уже открытый PR из этой ветки в main
+            const prList = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branchName}`,
+              state: 'open'
+            });
+
+            let prNumber;
+
+            if (prList.data.length > 0) {
+              // PR уже есть (повторный push в ту же ветку) - переиспользуем
+              prNumber = prList.data[0].number;
+              console.log(`Найден существующий PR: #${prNumber}`);
+            } else {
+              const response = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Auto-PR: ${branchName}`,
+                head: branchName,
+                base: 'main',
+                body: 'Автоматически созданный PR'
+              });
+              prNumber = response.data.number;
+              console.log(`Создан новый PR: #${prNumber}`);
+            }
+
+            core.setOutput('pr_number', prNumber);
+
+  # 2. Сборка, vet и unit-тесты
+  build:
+    needs: create-pr
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod   # версию берём из go.mod, не хардкодим
+          cache: true               # кэш go-модулей между запусками
+
+      - name: Сборка
+        run: go build ./...
+
+      - name: Статический анализ
+        run: go vet ./...
+
+      - name: Тесты (unit)
+        run: go test -race -short ./...
+        # -short отсекает интеграционные тесты (testcontainers, Docker)
+        # -race ловит гонки в горутинах errgroup/consumer
+
+  # 3. После зелёной сборки: статус, одобрение, squash-merge, удаление ветки
+  approve-and-merge:
+    needs: [create-pr, build]
+    runs-on: ubuntu-latest
+    env:
+      BRANCH_NAME: ${{ github.event.inputs.branch_name || github.ref_name }}
+    steps:
+      - name: Статус проверки
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              context: 'CI / Build',
+              description: 'Build succeeded'
+            });
+
+      - name: Одобрение и мерж PR
+        uses: actions/github-script@v7
+        with:
+          # GITHUB_TOKEN не может одобрить PR, созданный этим же workflow:
+          # GitHub запрещает самоодобрение - нужен PAT владельца из секретов
+          github-token: ${{ secrets.BOT_TOKEN }}
+          script: |
+            const prNumber = ${{ needs.create-pr.outputs.pr_number }};
+
+            // Одобрение (нужно, если main защищён правилом Require approvals)
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              event: 'APPROVE',
+              body: 'Автоматическое одобрение'
+            });
+
+            // Squash-merge: вся ветка становится одним коммитом в main
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: 'squash'
+            });
+
+            // Удаляем ветку (используем BRANCH_NAME, а не context.ref:
+            // при ручном запуске context.ref указывал бы на main)
+            await github.rest.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/' + process.env.BRANCH_NAME
+            });
