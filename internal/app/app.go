@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -28,9 +29,10 @@ import (
 	userservice "github.com/alexey-y-a/bank-api/internal/service/user"
 	"github.com/alexey-y-a/bank-api/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"golang.org/x/sync/errgroup"
 )
 
-func Run() {
+func Run(ctx context.Context) {
 	cfg := config.New()
 
 	log, err := logger.New(cfg.GetLogLevel(), cfg.GetLogFormat())
@@ -61,14 +63,14 @@ func Run() {
 
 	readyProbe := probe.NewReadyProbe()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	pingCtx, cancelPing := context.WithTimeout(ctx, 3*time.Second)
+	err = db.Ping(pingCtx)
+	cancelPing()
 
-	err = db.Ping(ctx)
 	if err != nil {
 		logger.Warn(log, "database ping failed on startup", err, nil)
 	} else {
-		logger.Debug(log, "database ping successful", nil)
+		logger.Debug(log, "database ping succeeded", nil)
 		readyProbe.MarkReady()
 	}
 
@@ -92,10 +94,10 @@ func Run() {
 
 	defer kafkaProducer.Close()
 
-	kafkaCtx, kafkaCancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer kafkaCancel()
-
+	kafkaCtx, kafkaCancel := context.WithTimeout(ctx, 3*time.Second)
 	err = kafkaProducer.Ping(kafkaCtx)
+	kafkaCancel()
+
 	if err != nil {
 		logger.Warn(log, "kafka ping failed on startup", err, nil)
 	} else {
@@ -123,11 +125,7 @@ func Run() {
 	creditSvc := creditservice.NewService(creditRepo, accountRepo)
 	creditHdl := credithandler.NewHandler(creditSvc)
 
-	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
-	defer schedulerCancel()
-
 	creditScheduler := scheduler.NewScheduler(creditRepo, log)
-	creditScheduler.Run(schedulerCtx)
 
 	authMW := middleware.Auth([]byte(cfg.GetJWTSecret()))
 
@@ -172,17 +170,35 @@ func Run() {
 		IdleTimeout:  10 * time.Second,
 	}
 
-	go func() {
+	errGr, egCtx := errgroup.WithContext(ctx)
+
+	errGr.Go(func() error {
 		logger.Info(log, "server listening", logger.Fields{"address": addr})
 
 		err := server.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
-			logger.Error(log, "critical server error", err, logger.Fields{"address": addr})
-			os.Exit(1)
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
 		}
-	}()
 
-	waitForShutdown(server, schedulerCancel, creditScheduler.Stop)
+		return fmt.Errorf("http server listen: %w", err)
+	})
+
+	errGr.Go(func() error {
+		creditScheduler.Run(egCtx)
+		creditScheduler.Stop()
+
+		return nil
+	})
+
+	errGr.Go(func() error {
+		return shutdownServer(egCtx, log, server)
+	})
+
+	err = errGr.Wait()
+	if err != nil {
+		logger.Error(log, "critical application error", err, nil)
+		os.Exit(1)
+	}
 }
 
 func handleHealthz(w http.ResponseWriter, r *http.Request) {

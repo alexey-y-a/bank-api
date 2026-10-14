@@ -4,32 +4,26 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
+
+	"github.com/alexey-y-a/bank-api/pkg/logger"
+	"github.com/sirupsen/logrus"
 )
 
-func waitForShutdown(server *http.Server, cancelScheduler context.CancelFunc, stopScheduler func()) {
-	sigChan := make(chan os.Signal, 1)
+func shutdownServer(ctx context.Context, log *logrus.Logger, server *http.Server) error {
+	<-ctx.Done()
 
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	<-sigChan
-
-	fmt.Println("received shutdown signal, starting gracefull shutdown...")
-
-	cancelScheduler()
-	stopScheduler()
-	fmt.Println("credit scheduler stopped")
+	logger.Info(log, "shutdown signal received, stopping server", nil)
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	err := server.Shutdown(shutdownCtx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "graceful shutdown error: %v\n", err)
+		return fmt.Errorf("graceful shutdown server: %w", err)
 	}
 
-	fmt.Println("server stopped successfully")
+	logger.Info(log, "server stopped successfully", nil)
+
+	return nil
 }
