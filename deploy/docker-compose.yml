@@ -97,6 +97,10 @@ services:
     ports:
       - "8123:8123"
       - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_USER: bank
+      CLICKHOUSE_PASSWORD: bank
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
@@ -105,7 +109,7 @@ services:
         soft: 262144
         hard: 262144
     healthcheck:
-      test: [ "CMD", "clickhouse-client", "--query", "SELECT 1" ]
+      test: [ "CMD", "clickhouse-client", "--user", "bank", "--password", "bank", "--query", "SELECT 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
