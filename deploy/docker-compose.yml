@@ -91,9 +91,32 @@ services:
     networks:
       - bank-api-net
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.9
+    container_name: bank-api-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: [ "CMD", "clickhouse-client", "--query", "SELECT 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - bank-api-net
+
 volumes:
   postgres_data:
   redis_data:
+  clickhouse_data:
 
 networks:
   bank-api-net:
