@@ -54,6 +54,12 @@ type EnvSetting struct {
 
 	// Kafka
 	KafkaBrokers string `env:"KAFKA_BROKERS" env-default:"localhost:9092" env-description:"Kafka broker address, comma separated"`
+
+	// ClickHouse (аналитическое хранилище)
+	ClickHouseAddr     string `env:"CLICKHOUSE_ADDR" env-default:"localhost:9000" env-description:"ClickHouse native TCP address"`
+	ClickHouseDB       string `env:"CLICKHOUSE_DB" env-default:"analytics" env-description:"ClickHouse database name"`
+	ClickHouseUser     string `env:"CLICKHOUSE_USER" env-default:"bank" env-description:"ClickHouse username"`
+	ClickHousePassword string `env:"CLICKHOUSE_PASSWORD" env-default:"bank" env-description:"ClickHouse password"`
 }
 
 type DatabaseConfig struct {
@@ -61,6 +67,13 @@ type DatabaseConfig struct {
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime int
+}
+
+type ClickHouseConfig struct {
+	Addr     string
+	Database string
+	Username string
+	Password string
 }
 
 func issetEnvConfigFile() bool {
@@ -123,6 +136,15 @@ func (c *Config) GetDatabaseConfig() DatabaseConfig {
 		MaxOpenConns:    c.env.DBMaxOpenConns,
 		MaxIdleConns:    c.env.DBMaxIdleConns,
 		ConnMaxLifetime: c.env.DBConnMaxLifetime,
+	}
+}
+
+func (c *Config) GetClickHouseConfig() ClickHouseConfig {
+	return ClickHouseConfig{
+		Addr:     c.env.ClickHouseAddr,
+		Database: c.env.ClickHouseDB,
+		Username: c.env.ClickHouseUser,
+		Password: c.env.ClickHousePassword,
 	}
 }
 
