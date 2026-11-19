@@ -19,6 +19,7 @@ import (
 	"github.com/alexey-y-a/bank-api/internal/kafka"
 	"github.com/alexey-y-a/bank-api/internal/middleware"
 	"github.com/alexey-y-a/bank-api/internal/probe"
+	"github.com/alexey-y-a/bank-api/internal/repository/clickhouse"
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	goredis "github.com/alexey-y-a/bank-api/internal/repository/redis"
 	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
@@ -104,7 +105,20 @@ func Run(ctx context.Context) {
 		logger.Info(log, "kafka producer initialized", logger.Fields{"brokers": cfg.GetKafkaBrokers()})
 	}
 
-	kafkaConsumer, err := kafka.NewConsumer(cfg.GetKafkaBrokers(), log)
+	analyticsRepo, err := clickhouse.NewAnalyticsRepo(cfg.GetClickHouseConfig())
+	if err != nil {
+		logger.Error(log, "failed to create analytics repo", err, nil)
+		os.Exit(1)
+	}
+
+	defer func() {
+		closeErr := analyticsRepo.Close()
+		if closeErr != nil {
+			logger.Warn(log, "failed to close clickhouse connection", closeErr, nil)
+		}
+	}()
+
+	kafkaConsumer, err := kafka.NewConsumer(cfg.GetKafkaBrokers(), analyticsRepo, log)
 	if err != nil {
 		logger.Error(log, "failed to create kafka consumer", err, nil)
 		os.Exit(1)
