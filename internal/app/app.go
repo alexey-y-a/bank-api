@@ -12,6 +12,7 @@ import (
 	"github.com/alexey-y-a/bank-api/internal/config"
 	cardcrypto "github.com/alexey-y-a/bank-api/internal/crypto"
 	accounthandler "github.com/alexey-y-a/bank-api/internal/handler/account"
+	analyticshandler "github.com/alexey-y-a/bank-api/internal/handler/analytics"
 	cardhandler "github.com/alexey-y-a/bank-api/internal/handler/card"
 	credithandler "github.com/alexey-y-a/bank-api/internal/handler/credit"
 	transferhandler "github.com/alexey-y-a/bank-api/internal/handler/transfer"
@@ -23,6 +24,7 @@ import (
 	"github.com/alexey-y-a/bank-api/internal/repository/postgres"
 	goredis "github.com/alexey-y-a/bank-api/internal/repository/redis"
 	accountservice "github.com/alexey-y-a/bank-api/internal/service/account"
+	analyticservice "github.com/alexey-y-a/bank-api/internal/service/analytics"
 	cardservice "github.com/alexey-y-a/bank-api/internal/service/card"
 	creditservice "github.com/alexey-y-a/bank-api/internal/service/credit"
 	"github.com/alexey-y-a/bank-api/internal/service/scheduler"
@@ -144,6 +146,8 @@ func Run(ctx context.Context) {
 
 	creditRepo := postgres.NewCreditRepo(db.Pool())
 	creditSvc := creditservice.NewService(creditRepo, accountRepo)
+	analyticsSvc := analyticservice.NewService(analyticsRepo, accountRepo)
+	analyticsHdl := analyticshandler.NewHandler(analyticsSvc)
 	creditHdl := credithandler.NewHandler(creditSvc)
 
 	creditScheduler := scheduler.NewScheduler(creditRepo, log)
@@ -170,6 +174,8 @@ func Run(ctx context.Context) {
 
 	mux.Handle("POST /transfer", authMW(http.HandlerFunc(transferHdl.MakeTransfer)))
 	mux.Handle("GET /history", authMW(http.HandlerFunc(transferHdl.GetHistory)))
+
+	mux.Handle("GET /analytics/income-expense", authMW(http.HandlerFunc(analyticsHdl.GetIncomeExpense)))
 
 	mux.Handle("POST /credits", authMW(http.HandlerFunc(creditHdl.CreateCredit)))
 	mux.Handle("GET /credits/{id}/schedule", authMW(http.HandlerFunc(creditHdl.GetSchedule)))

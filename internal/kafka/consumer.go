@@ -27,12 +27,12 @@ type bufferedEvent struct {
 
 type Consumer struct {
 	client    *kgo.Client
-	analytics repository.AnalyticsRepository
+	analytics repository.AnalyticsWriter
 	log       *logrus.Logger
 	buffer    []bufferedEvent
 }
 
-func NewConsumer(brokers []string, analytics repository.AnalyticsRepository, log *logrus.Logger) (*Consumer, error) {
+func NewConsumer(brokers []string, analytics repository.AnalyticsWriter, log *logrus.Logger) (*Consumer, error) {
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumerGroup(consumerGroupTransactions),
